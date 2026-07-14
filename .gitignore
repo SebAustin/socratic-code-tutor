@@ -3,3 +3,10 @@ node_modules/
 .env*.local
 .vercel/
 .remember/
+.DS_Store
+*.log
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+!.env.local.example

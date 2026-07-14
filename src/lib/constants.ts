@@ -1,0 +1,20 @@
+export const WALL_MS = 5_000;
+export const MAX_STEPS = 10_000;
+export const WORKER_INIT_TIMEOUT_MS = 15_000;
+export const RUN_TIMEOUT_MS = 8_000;
+export const REQ_PER_MIN = 12;
+export const MAX_TURNS_PER_SESSION = 30;
+export const MAX_OUTPUT_TOKENS = 700;
+export const TRACE_SUMMARY_TOKEN_BUDGET = 1_200;
+export const LOCALS_REPR_MAXLEN = 200;
+export const GUARDRAIL_SIMILAR_LINES_N = 3;
+export const GUARDRAIL_SIMILARITY_THRESHOLD = 0.8;
+export const PERSISTED_TRACE_MAX_EVENTS = 500;
+
+export const MAX_CODE_LEN = 20_000;
+export const RATE_WINDOW_MS = 60_000;
+export const MAX_RATE_LIMIT_KEYS = 2_000;
+export const PYODIDE_VERSION = "314.0.2";
+export const PYODIDE_INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+export const PYODIDE_MODULE_URL = `${PYODIDE_INDEX_URL}pyodide.mjs`;
+export const STORAGE_KEY = "socratic-code-tutor:sessions:v1";

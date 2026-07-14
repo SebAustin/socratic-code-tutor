@@ -1,0 +1,50 @@
+{
+  "name": "socratic-code-tutor",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": "24.x" },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:cross-browser": "playwright test --project=chromium --project=firefox --project=webkit"
+  },
+  "dependencies": {
+    "@codemirror/lang-python": "6.2.1",
+    "@uiw/react-codemirror": "4.25.11",
+    "next": "16.2.10",
+    "openai": "6.46.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "4.4.3",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.61.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.10",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.10"
+    }
+  }
+}
