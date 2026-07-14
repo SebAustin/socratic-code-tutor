@@ -122,9 +122,9 @@ The CSP in `next.config.ts` deliberately allows only the pinned jsDelivr Pyodide
 
 The product contract, UX specification, and trust-zone plan were prepared before implementation. Codex then built the core application in one primary workspace session: the typed seams, client-only Pyodide runner, real `sys.settrace` capture, buffered server guardrail, GPT-5.6 routes, state persistence, teacher export, Marginalia interface, and acceptance suite. Codex also verified current package/model/runtime identifiers, caught peer-version conflicts, and hardened failure paths for quota exhaustion and CDN/runtime load failure.
 
-Before submitting, run `/feedback` in the primary Codex session and paste the resulting session ID here and into Devpost:
+The majority of core functionality was built in a single primary Codex session:
 
-> Codex feedback session ID: **TODO before submission**
+> Codex feedback session ID: **`019f6114-370f-7750-854f-c0b7a5cf32a9`**
 
 ## Known v0 limits
 
