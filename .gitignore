@@ -11,3 +11,11 @@ playwright-report/
 test-results/
 !.env.local.example
 .cursor/
+demo-video/out/
+demo-video/clips/
+demo-video/audio/
+demo-video/frames/
+demo-video/tmp/
+demo-video/scripts/state/
+demo-video/scripts/debug/
+demo-video/assets/*.png

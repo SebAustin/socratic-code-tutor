@@ -1,0 +1,42 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "beats": [
+    {
+      "id": "01-hook",
+      "narration": "When a student's code breaks, the fastest help usually just hands them a fixed line. The bug gets solved; the understanding doesn't. This is Socratic Code Tutor. It never gives you the answer. It asks the question that gets you there yourself.",
+      "minActionSec": 13
+    },
+    {
+      "id": "02-run",
+      "narration": "This runs for real: Python, compiled and executed with Pyodide, right in the browser. No student code ever touches our server. It fails with an IndexError on line four. A normal assistant would just tell me to fix that line. Watch what this one does instead.",
+      "minActionSec": 14
+    },
+    {
+      "id": "03-hints",
+      "narration": "Every reply is generated live by GPT-5.6, but it's structurally blocked from ever handing over a fix. A visible four-rung ladder lets the student escalate one rung at a time: a conceptual question, then localization, then naming the mechanism, and at rung four, a near-solution description that's still not runnable code. Every response is screened server-side, after generation and before it reaches this chat.",
+      "minActionSec": 30
+    },
+    {
+      "id": "04-trace",
+      "narration": "This trace isn't simulated. It's captured live from Python's own sys-dot-settrace inside the Pyodide sandbox, so the student can step through exactly what their variables actually did.",
+      "minActionSec": 12
+    },
+    {
+      "id": "05-teacher",
+      "narration": "Every session gets tagged with a misconception category by GPT-5.6 — off-by-one, mutation versus copy, scope confusion — so a teacher sees the pattern across a whole class, stored right in the browser, and can export it as JSON or Markdown.",
+      "minActionSec": 14
+    },
+    {
+      "id": "06-build",
+      "narration": "The spec was written up front. Codex, driving GPT-5.6, then implemented the whole application in one continuous session: the Pyodide runner, the trace capture, the guardrail pipeline, and the teacher export. A four-part audit found real guardrail bypasses; Codex fixed every one in a single follow-up pass. GPT-5.6 does two jobs here — it's the model Codex used to write the code, and it's the model running the tutor and the tagging live, right now.",
+      "minActionSec": 16
+    },
+    {
+      "id": "07-close",
+      "narration": "Socratic Code Tutor. Education track, OpenAI Build Week. Link's below.",
+      "minActionSec": 4
+    }
+  ]
+}
