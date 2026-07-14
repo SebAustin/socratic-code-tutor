@@ -3,32 +3,37 @@ import { buildTutorMessages } from "@/features/tutor/promptBuilder";
 import { screenForClient } from "@/features/tutor/guardrail";
 import { encodeSse, hasCompleteScreenBoundary } from "@/lib/sse";
 import {
+  MAX_CHAT_TURN_LEN,
   MAX_CODE_LEN,
   MAX_OUTPUT_TOKENS,
+  MAX_RUN_OUTPUT_LEN,
+  MAX_RUN_STATUS_LEN,
+  MAX_SESSION_ID_LEN,
+  MAX_TRACE_SUMMARY_LEN,
   MAX_TURNS_PER_SESSION,
 } from "@/lib/constants";
 import { checkRateLimit } from "@/server/ratelimit";
+import { rateLimitKey } from "@/server/ratelimit";
 import { createOpenAI } from "@/server/openai";
-import type { TutorRequest } from "@/features/session/types";
 
 export const runtime = "nodejs";
 
 const RequestSchema = z.object({
-  sessionId: z.string().min(1).max(120),
+  sessionId: z.string().min(1).max(MAX_SESSION_ID_LEN),
   code: z.string().max(MAX_CODE_LEN),
   run: z.object({
-    stdout: z.string().max(20_000),
-    stderr: z.string().max(20_000),
+    stdout: z.string().max(MAX_RUN_OUTPUT_LEN),
+    stderr: z.string().max(MAX_RUN_OUTPUT_LEN),
     error: z
       .object({ excType: z.string(), message: z.string(), line: z.number().nullable() })
       .nullable(),
-    status: z.string().max(40),
+    status: z.string().max(MAX_RUN_STATUS_LEN),
   }),
-  traceSummary: z.string().max(8_000),
+  traceSummary: z.string().max(MAX_TRACE_SUMMARY_LEN),
   history: z.array(
     z.object({
       role: z.enum(["student", "tutor"]),
-      content: z.string().max(6_000),
+      content: z.string().max(MAX_CHAT_TURN_LEN),
       rung: z.number().optional(),
     }),
   ),
@@ -36,12 +41,8 @@ const RequestSchema = z.object({
   lang: z.enum(["python", "javascript"]),
 });
 
-function clientIp(request: Request): string {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-}
-
 export async function POST(request: Request): Promise<Response> {
-  const limit = checkRateLimit(clientIp(request));
+  const limit = checkRateLimit(rateLimitKey(request));
   if (!limit.allowed) {
     return Response.json(
       { error: "Tutor rate limit reached. Try again shortly." },
@@ -51,7 +52,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const parsed = RequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid tutor request." }, { status: 400 });
-  const body = parsed.data as TutorRequest;
+  const body = parsed.data;
   if (body.history.filter(({ role }) => role === "student").length > MAX_TURNS_PER_SESSION) {
     return Response.json({ error: "Session turn limit reached." }, { status: 429 });
   }
@@ -61,6 +62,13 @@ export async function POST(request: Request): Promise<Response> {
   const model = process.env.OPENAI_MODEL ?? "gpt-5.6";
   const openai = createOpenAI(apiKey);
   const messages = buildTutorMessages(body);
+  const upstreamController = new AbortController();
+  let abortModelStream = () => {};
+  const onRequestAbort = () => {
+    if (!upstreamController.signal.aborted) upstreamController.abort(request.signal.reason);
+    abortModelStream();
+  };
+  request.signal.addEventListener("abort", onRequestAbort, { once: true });
 
   try {
     const modelStream = await openai.chat.completions.create({
@@ -68,42 +76,87 @@ export async function POST(request: Request): Promise<Response> {
       messages,
       stream: true,
       max_completion_tokens: MAX_OUTPUT_TOKENS,
-    });
+    }, { signal: upstreamController.signal });
+    abortModelStream = () => modelStream.controller.abort();
+    if (request.signal.aborted) onRequestAbort();
+
+    let closed = false;
+    const abortUpstream = (reason?: unknown) => {
+      if (!upstreamController.signal.aborted) upstreamController.abort(reason);
+      abortModelStream();
+    };
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        let pending = "";
+        let accumulated = "";
+        let releasedLength = 0;
         let flagged = false;
 
-        const release = (final = false) => {
-          if (!pending || (!final && !hasCompleteScreenBoundary(pending))) return;
-          const result = screenForClient(pending, body.code, body.requestedRung);
-          if (!result.flagged) controller.enqueue(encodeSse({ chunk: result.chunk }));
-          else {
-            flagged = true;
-            console.warn("[tutor-guardrail] screened model output", {
-              sessionId: body.sessionId,
-              reason: result.reason,
-            });
-            controller.enqueue(encodeSse({ chunk: result.chunk }));
+        const enqueue = (event: Parameters<typeof encodeSse>[0]) => {
+          if (closed || upstreamController.signal.aborted && !flagged) return false;
+          try {
+            controller.enqueue(encodeSse(event));
+            return true;
+          } catch {
+            closed = true;
+            abortUpstream("downstream-closed");
+            return false;
           }
-          pending = "";
+        };
+
+        const close = () => {
+          if (closed) return;
+          closed = true;
+          try {
+            controller.close();
+          } catch {
+            // The consumer may already have canceled the response body.
+          }
+        };
+
+        const release = (final = false) => {
+          const pending = accumulated.slice(releasedLength);
+          if (!pending || (!final && !hasCompleteScreenBoundary(pending))) return true;
+          const result = screenForClient(accumulated, body.code, body.requestedRung);
+          if (!result.flagged) {
+            enqueue({ chunk: pending });
+            releasedLength = accumulated.length;
+            return true;
+          }
+
+          flagged = true;
+          abortUpstream("guardrail-flagged");
+          console.warn("[tutor-guardrail] screened model output", {
+            sessionId: body.sessionId,
+            reason: result.reason,
+          });
+          enqueue({ chunk: result.chunk });
+          enqueue({ done: true, rung: body.requestedRung, flagged: true });
+          close();
+          return false;
         };
 
         try {
           for await (const chunk of modelStream) {
-            pending += chunk.choices[0]?.delta?.content ?? "";
-            release(false);
+            accumulated += chunk.choices[0]?.delta?.content ?? "";
+            if (!release(false)) return;
           }
-          release(true);
-          controller.enqueue(
-            encodeSse({ done: true, rung: body.requestedRung, flagged }),
-          );
-          controller.close();
+          if (!release(true)) return;
+          enqueue({ done: true, rung: body.requestedRung, flagged });
+          close();
         } catch {
-          controller.enqueue(encodeSse({ error: "Tutor stream interrupted." }));
-          controller.close();
+          if (!upstreamController.signal.aborted) {
+            enqueue({ error: "Tutor stream interrupted." });
+          }
+          close();
+        } finally {
+          request.signal.removeEventListener("abort", onRequestAbort);
         }
+      },
+      cancel(reason) {
+        closed = true;
+        request.signal.removeEventListener("abort", onRequestAbort);
+        abortUpstream(reason);
       },
     });
 
@@ -116,6 +169,7 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
   } catch {
+    request.signal.removeEventListener("abort", onRequestAbort);
     return Response.json({ error: "Tutor unavailable. Please retry." }, { status: 502 });
   }
 }

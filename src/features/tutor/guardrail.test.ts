@@ -18,6 +18,22 @@ describe("screen() — primary rules", () => {
     expect(result.pass).toBe(false);
     if (!result.pass) expect(result.reason).toContain("imperative-fix");
   });
+  it.each([
+    "Consider changing to range(len(nums) - 1) instead of what you have on line 3.",
+    "What if line 4 were s = s + nums[i] — try that and rerun.",
+  ])("flags the reproduced bypass: %s", (text) => {
+    expect(screen(text, studentCode, 2).pass).toBe(false);
+  });
+  it.each([
+    "Try replacing line 4 using nums[i] instead.",
+    "Consider rewriting line 4 to avoid the extra index.",
+    "Fixing this with sum(nums) instead would work.",
+  ])("flags morphological imperative phrasing: %s", (text) => {
+    expect(screen(text, studentCode, 2).pass).toBe(false);
+  });
+  it("flags non-verbatim runnable inline code below rung 4", () => {
+    expect(screen("What does `sum(nums)` return here?", studentCode, 3).pass).toBe(false);
+  });
   it("passes a fenced quote of the student's unchanged line", () => {
     expect(screen("You wrote:\n```python\ns = s + nums[i + 1]\n```\nWhat happens on the final iteration?", studentCode, 2).pass).toBe(true);
   });
@@ -36,8 +52,10 @@ describe("screen() — rung rules", () => {
   });
   it("rung 4 flags multi-line pseudocode", () => expect(screen("Pseudocode:\nindex = current\ntotal = total + item", studentCode, 4).pass).toBe(false));
   it("rung 4 passes one inline pseudocode expression", () => expect(screen("Pseudocode: `new_index = current_index - 1` — what would that change?", studentCode, 4).pass).toBe(true));
+  it("rung 4 flags a bare runnable assignment", () => expect(screen("s = s + nums[i]", studentCode, 4).pass).toBe(false));
   it("passes a conceptual question", () => expect(screen("What values does `range(len(nums))` produce, and which one is last?", studentCode, 2).pass).toBe(true));
   it("passes a question quoting one student line", () => expect(screen("You wrote `s = s + nums[i + 1]` — what is i on the final iteration?", studentCode, 2).pass).toBe(true));
+  it("passes conceptual prose that only mentions variables", () => expect(screen("How do i and s change between the final two iterations?", studentCode, 2).pass).toBe(true));
 });
 
 describe("buffered pipeline invariant", () => {

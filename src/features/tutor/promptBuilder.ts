@@ -6,7 +6,8 @@ import type { TutorRequest } from "@/features/session/types";
 export type PromptMessage = { role: "system" | "user"; content: string };
 
 function delimited(name: string, value: string): string {
-  return `<<<${name}>>>\n${value}\n<<<END_${name}>>>`;
+  const neutralized = value.replaceAll("<<<", "<<\u200b<").replaceAll(">>>", ">>\u200b>");
+  return `<<<${name}>>>\n${neutralized}\n<<<END_${name}>>>`;
 }
 
 export function buildTutorMessages(request: TutorRequest): PromptMessage[] {

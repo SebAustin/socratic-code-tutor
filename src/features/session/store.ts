@@ -40,9 +40,9 @@ type SessionState = {
   loadSample: (sample: DemoSample) => string;
   updateCode: (code: string) => void;
   recordRun: (result: RunResult) => void;
-  appendChat: (turn: ChatTurn) => void;
+  appendChat: (sessionId: string, turn: Omit<ChatTurn, "id">) => void;
   setRung: (rung: 0 | 1 | 2 | 3 | 4) => void;
-  addTag: (tag: MisconceptionRecord) => void;
+  addTag: (sessionId: string, tag: MisconceptionRecord) => void;
   deleteSession: (id: string) => void;
   resetAll: () => void;
 };
@@ -53,6 +53,7 @@ function persist(sessions: Session[]): void {
   saveSessions(sessions);
 }
 
+// This module-level client store is an SSR singleton; do not read or mutate it from server code.
 export const useSessionStore = create<SessionState>((set, get) => ({
   sessions: [initial],
   activeSessionId: initial.id,
@@ -87,6 +88,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       code: sample.code,
       chat: [
         {
+          id: newId(),
           role: "tutor",
           content: "Run it when you're ready. We'll compare what you expected with what Python actually did.",
         },
@@ -130,10 +132,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({ sessions });
   },
 
-  appendChat(turn) {
+  appendChat(sessionId, turn) {
+    const chatTurn: ChatTurn = { ...turn, id: newId() };
     const sessions = get().sessions.map((session) =>
-      session.id === get().activeSessionId
-        ? { ...session, chat: [...session.chat, turn] }
+      session.id === sessionId
+        ? { ...session, chat: [...session.chat, chatTurn] }
         : session,
     );
     persist(sessions);
@@ -148,9 +151,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({ sessions });
   },
 
-  addTag(tag) {
+  addTag(sessionId, tag) {
     const sessions = get().sessions.map((session) =>
-      session.id === get().activeSessionId
+      session.id === sessionId
         ? { ...session, tags: [...session.tags, tag] }
         : session,
     );

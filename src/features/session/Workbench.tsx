@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useModalDialog } from "@/features/a11y/useModalDialog";
 import { DemoLanding } from "@/features/demo/DemoLanding";
 import { SAMPLES, type DemoSample } from "@/features/demo/samples";
 import { EditorPane } from "@/features/editor/EditorPane";
@@ -20,6 +21,10 @@ function currentSession(): Session {
   return state.sessions.find(({ id }) => id === state.activeSessionId) ?? state.sessions[0];
 }
 
+function sessionById(id: string): Session | undefined {
+  return useSessionStore.getState().sessions.find((session) => session.id === id);
+}
+
 export function Workbench() {
   const sessions = useSessionStore((state) => state.sessions);
   const activeId = useSessionStore((state) => state.activeSessionId);
@@ -36,14 +41,25 @@ export function Workbench() {
   const resetAll = useSessionStore((state) => state.resetAll);
   const session = sessions.find(({ id }) => id === activeId) ?? sessions[0];
   const { run, retry, phase, fatal } = useSandbox();
-  const { askTutor, isStreaming, streamingText, error } = useTutorStream();
+  const { askTutor, cancel: cancelTutor, isStreaming, streamingText, error } = useTutorStream();
   const [samplesOpen, setSamplesOpen] = useState(false);
   const [outputTab, setOutputTab] = useState<"output" | "trace">("output");
   const [traceLine, setTraceLine] = useState<number | null>(null);
+  const closeSamples = useCallback(() => setSamplesOpen(false), []);
+  const {
+    setDialogElement: setSamplesDialog,
+    rememberTrigger: rememberSamplesTrigger,
+  } = useModalDialog(samplesOpen, closeSamples);
+  const openSamples = useCallback((trigger?: HTMLElement | null) => {
+    rememberSamplesTrigger(trigger);
+    setSamplesOpen(true);
+  }, [rememberSamplesTrigger]);
 
   useEffect(() => {
     if (!hydrated) hydrate(new URLSearchParams(window.location.search).get("session"));
   }, [hydrate, hydrated]);
+
+  useEffect(() => cancelTutor, [cancelTutor]);
 
   useEffect(() => {
     if (!hydrated || !activeId) return;
@@ -57,9 +73,11 @@ export function Workbench() {
     rung: HintRung,
     studentContent?: string,
   ) => {
-    if (studentContent) appendChat({ role: "student", content: studentContent });
+    const originatingSessionId = currentSession().id;
+    if (studentContent) appendChat(originatingSessionId, { role: "student", content: studentContent });
     setRung(rung);
-    const snapshot = currentSession();
+    const snapshot = sessionById(originatingSessionId);
+    if (!snapshot) return;
     const runMeta = result ?? snapshot.runs.at(-1);
     if (!runMeta) return;
     const request: TutorRequest = {
@@ -78,29 +96,31 @@ export function Workbench() {
     };
     const response = await askTutor(request);
     if (!response) return;
-    appendChat({ role: "tutor", content: response, rung });
-    const after = currentSession();
+    appendChat(originatingSessionId, { role: "tutor", content: response, rung });
+    const after = sessionById(originatingSessionId);
+    if (!after) return;
     if (after.tags.length === 0) {
       const tag = await tagSession({ sessionId: after.id, code: after.code, history: after.chat });
-      if (tag) addTag(tag);
+      if (tag) addTag(originatingSessionId, tag);
     }
   }, [addTag, appendChat, askTutor, setRung]);
 
   const handleRun = useCallback(async () => {
-    if (!session?.code.trim() || phase === "loading" || phase === "running") return;
+    const active = currentSession();
+    if (!active?.code.trim() || phase === "loading" || phase === "running") return;
     setOutputTab("output");
-    const result = await run(session.code);
+    const result = await run(active.code);
     if (!result) return;
     recordRun(result);
     await talkToTutor(result, 1);
-  }, [phase, recordRun, run, session, talkToTutor]);
+  }, [phase, recordRun, run, talkToTutor]);
 
   const chooseSample = useCallback((sample: DemoSample) => {
     loadSample(sample);
-    setSamplesOpen(false);
+    closeSamples();
     setOutputTab("output");
     setTraceLine(null);
-  }, [loadSample]);
+  }, [closeSamples, loadSample]);
 
   const handleStudent = useCallback(async (content: string) => {
     const rung = (currentSession().currentRung || 1) as HintRung;
@@ -115,9 +135,9 @@ export function Workbench() {
 
   const shortcutActions = useMemo(() => ({
     onRun: handleRun,
-    onSamples: () => setSamplesOpen(true),
+    onSamples: () => openSamples(document.querySelector<HTMLElement>("[data-samples-trigger]")),
     onChat: () => document.getElementById("chat-composer")?.focus(),
-  }), [handleRun]);
+  }), [handleRun, openSamples]);
   useEditorShortcuts(shortcutActions);
 
   const latestRun = session?.runs.at(-1);
@@ -141,7 +161,7 @@ export function Workbench() {
           <span className="brand-mark">⌗</span><span className="brand-word">Socratic</span>
         </button>
         <nav className="top-actions" aria-label="Workspace navigation">
-          <button className="button" onClick={() => setSamplesOpen(true)}>Samples <span aria-hidden="true">⌘K</span></button>
+          <button className="button" data-samples-trigger onClick={(event) => openSamples(event.currentTarget)}>Samples <span aria-hidden="true">⌘K</span></button>
           {session?.code ? <select className="button session-select" aria-label="Switch session" value={activeId} onChange={(event) => activate(event.target.value)}>{sessions.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select> : null}
           <button className="button ghost" onClick={() => createSession()}>New session</button>
           <Link className="button ghost" href="/teacher">Teacher view →</Link>
@@ -181,7 +201,7 @@ export function Workbench() {
         </main>
       )}
 
-      {samplesOpen ? <div className="drawer-backdrop" role="presentation" onMouseDown={() => setSamplesOpen(false)}><section className="drawer" role="dialog" aria-modal="true" aria-label="Sample library" onMouseDown={(event) => event.stopPropagation()}><div className="drawer-head"><div><p className="kicker">Sample library</p><h2>Choose the next mystery</h2></div><button className="button ghost" onClick={() => setSamplesOpen(false)} aria-label="Close sample library">Close ✕</button></div><div className="sample-list">{SAMPLES.map((sample, index) => <button className="sample-card" key={sample.id} onClick={() => chooseSample(sample)}><span className="sample-number">0{index + 1}</span><span><span className="kicker">{sample.eyebrow}</span><h3>{sample.title}</h3><p>{sample.discoveryGoal}</p></span><span className="sample-arrow">→</span></button>)}</div></section></div> : null}
+      {samplesOpen ? <div className="drawer-backdrop" role="presentation" onMouseDown={closeSamples}><section ref={setSamplesDialog} tabIndex={-1} className="drawer" role="dialog" aria-modal="true" aria-label="Sample library" onMouseDown={(event) => event.stopPropagation()}><div className="drawer-head"><div><p className="kicker">Sample library</p><h2>Choose the next mystery</h2></div><button className="button ghost" onClick={closeSamples} aria-label="Close sample library">Close ✕</button></div><div className="sample-list">{SAMPLES.map((sample, index) => <button className="sample-card" key={sample.id} onClick={() => chooseSample(sample)}><span className="sample-number">0{index + 1}</span><span><span className="kicker">{sample.eyebrow}</span><h3>{sample.title}</h3><p>{sample.discoveryGoal}</p></span><span className="sample-arrow">→</span></button>)}</div></section></div> : null}
     </div>
   );
 }

@@ -22,6 +22,7 @@ export class PyodideRunner {
   private worker: Worker | null = null;
   private readyPromise: Promise<void> | null = null;
   private pending = new Map<string, PendingRun>();
+  private runInFlight = false;
   isReady = false;
 
   private createWorker(): Promise<void> {
@@ -84,32 +85,38 @@ export class PyodideRunner {
   }
 
   async run(request: RunRequest): Promise<RunResult> {
-    if (!this.worker || !this.readyPromise) await this.createWorker();
-    else await this.readyPromise;
+    if (this.runInFlight) throw new Error("A Python run is already in progress.");
+    this.runInFlight = true;
+    try {
+      if (!this.worker || !this.readyPromise) await this.createWorker();
+      else await this.readyPromise;
 
-    return new Promise<RunResult>((resolve, reject) => {
-      const startedAt = performance.now();
-      const timeoutMs = Math.min(RUN_TIMEOUT_MS, request.limits.wallMs);
-      const timer = setTimeout(() => {
-        this.pending.delete(request.id);
-        this.worker?.terminate();
-        this.worker = null;
-        this.readyPromise = null;
-        this.isReady = false;
-        resolve({
-          type: "result",
-          id: request.id,
-          stdout: "",
-          stderr: "",
-          error: null,
-          trace: [],
-          status: "timeout",
-          durationMs: Math.round(performance.now() - startedAt),
-        });
-      }, timeoutMs);
-      this.pending.set(request.id, { resolve, reject, timer, request, startedAt });
-      this.worker?.postMessage(request);
-    });
+      return await new Promise<RunResult>((resolve, reject) => {
+        const startedAt = performance.now();
+        const timeoutMs = Math.min(RUN_TIMEOUT_MS, request.limits.wallMs);
+        const timer = setTimeout(() => {
+          this.pending.delete(request.id);
+          this.worker?.terminate();
+          this.worker = null;
+          this.readyPromise = null;
+          this.isReady = false;
+          resolve({
+            type: "result",
+            id: request.id,
+            stdout: "",
+            stderr: "",
+            error: null,
+            trace: [],
+            status: "timeout",
+            durationMs: Math.round(performance.now() - startedAt),
+          });
+        }, timeoutMs);
+        this.pending.set(request.id, { resolve, reject, timer, request, startedAt });
+        this.worker?.postMessage(request);
+      });
+    } finally {
+      this.runInFlight = false;
+    }
   }
 
   reset(): void {
@@ -117,6 +124,7 @@ export class PyodideRunner {
     this.worker = null;
     this.readyPromise = null;
     this.isReady = false;
+    this.runInFlight = false;
     for (const run of this.pending.values()) {
       clearTimeout(run.timer);
       run.reject(new Error("Python runtime was reset."));

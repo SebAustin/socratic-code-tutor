@@ -98,8 +98,8 @@ All samples are deterministic and live in `src/features/demo/samples.ts`.
 
 ## Verification snapshot
 
-- 56 Vitest unit/integration tests across 12 files
-- 15 deterministic Playwright checks pass across Chromium, Firefox, and WebKit
+- 84 Vitest unit/integration tests across 16 files
+- 7 deterministic Chromium checks pass, including real Pyodide trace fidelity
 - A separate real-runtime Chromium smoke confirms Pyodide 314.0.2 returns `IndexError` on line 4 plus a non-empty trace
 - Measured real-runtime smoke: 2,395 ms from Run click to visible structured result; 4 ms inside Python for execution plus trace capture
 - 93.25% line coverage on the priority logic surface

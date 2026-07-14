@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_STEPS, WALL_MS } from "@/lib/constants";
 import type { RunRequest, RunResult } from "@/features/session/types";
 import { PyodideRunner } from "./pyodideRunner";
@@ -11,6 +11,8 @@ export function useSandbox() {
   const runnerRef = useRef<PyodideRunner | null>(null);
   const [phase, setPhase] = useState<SandboxPhase>("idle");
   const [fatal, setFatal] = useState<string | null>(null);
+
+  useEffect(() => () => runnerRef.current?.reset(), []);
 
   const run = useCallback(async (code: string): Promise<RunResult | null> => {
     const runner = runnerRef.current ?? new PyodideRunner();

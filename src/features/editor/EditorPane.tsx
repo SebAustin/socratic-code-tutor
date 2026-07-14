@@ -3,6 +3,15 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 
+const PYTHON_EXTENSIONS = [python()];
+const BASIC_SETUP = {
+  lineNumbers: true,
+  foldGutter: false,
+  highlightActiveLine: true,
+  highlightActiveLineGutter: true,
+  autocompletion: false,
+};
+
 type EditorPaneProps = {
   code: string;
   onChange: (code: string) => void;
@@ -43,16 +52,10 @@ export function EditorPane({
           value={code}
           height="330px"
           theme="dark"
-          extensions={[python()]}
+          extensions={PYTHON_EXTENSIONS}
           onChange={onChange}
           aria-label="Python code editor"
-          basicSetup={{
-            lineNumbers: true,
-            foldGutter: false,
-            highlightActiveLine: true,
-            highlightActiveLineGutter: true,
-            autocompletion: false,
-          }}
+          basicSetup={BASIC_SETUP}
         />
       </div>
     </section>

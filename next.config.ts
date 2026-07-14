@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const developmentOnly = process.env.NODE_ENV === "development";
+// Next's App Router emits inline bootstrap scripts. A nonce requires per-request rendering,
+// so production retains 'unsafe-inline' as a documented residual CSP risk for this MVP.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${developmentOnly ? " 'unsafe-eval'" : ""} https://cdn.jsdelivr.net`,
@@ -24,6 +26,7 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: csp },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],

@@ -28,7 +28,7 @@ export function TutorPanel({ session, streamingText, isStreaming, error, onSubmi
   return (
     <section className="tutor-column" aria-label="Tutor conversation">
       <div className="hint-rail" role="group" aria-label="Hint progress">
-        <div className="hint-caption"><strong>{rung ? `Hint ${rung} of 4` : "Hint ladder"}</strong><span>{rung ? HINTS[rung].label : "Start with a run"}</span></div>
+        <div className="hint-caption" id="hint-caption"><strong>{rung ? `Hint ${rung} of 4` : "Hint ladder"}</strong><span>{rung ? HINTS[rung].label : "Start with a run"}</span></div>
         <div className="hint-steps" aria-hidden="true">
           {([1, 2, 3, 4] as const).map((step) => (
             <span key={step} className={`hint-step ${step <= rung ? "active" : ""}`} style={{ "--rung-index": step, "--rung-color": `var(--rung-${step})` } as React.CSSProperties} />
@@ -36,8 +36,8 @@ export function TutorPanel({ session, streamingText, isStreaming, error, onSubmi
         </div>
       </div>
       <div className="chat-log" role="log" aria-live="polite" aria-relevant="additions">
-        {session.chat.map((turn, index) => (
-          <article className={`chat-message ${turn.role}`} key={`${turn.role}-${index}`}>
+        {session.chat.map((turn) => (
+          <article className={`chat-message ${turn.role}`} key={turn.id}>
             <span className="message-role">{turn.role === "tutor" ? `Tutor${turn.rung ? ` · hint ${turn.rung}` : ""}` : "You"}</span>
             {turn.content}
           </article>
@@ -47,7 +47,7 @@ export function TutorPanel({ session, streamingText, isStreaming, error, onSubmi
       <form className="composer" onSubmit={submit}>
         {error ? <p className="chat-error">{error}</p> : null}
         <label className="mono-label" htmlFor="chat-composer">What do you think happened?</label>
-        <textarea id="chat-composer" value={draft} onChange={(event) => setDraft(event.target.value)} disabled={isStreaming} placeholder="Tell the tutor what you tried, or ask a question." />
+        <textarea id="chat-composer" aria-describedby="hint-caption" value={draft} onChange={(event) => setDraft(event.target.value)} disabled={isStreaming} placeholder="Tell the tutor what you tried, or ask a question." />
         <div className="composer-actions">
           <button className="button" type="button" onClick={onHint} disabled={isStreaming || rung >= 4 || session.runs.length === 0}>{hintLabel}</button>
           <button className="button primary" type="submit" disabled={isStreaming || !draft.trim() || session.runs.length === 0}>Send thought →</button>

@@ -18,6 +18,7 @@ type PyodideModule = {
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
+// Single source of truth for the Python tracer executed inside the Pyodide worker.
 const TRACE_RUNNER = String.raw`
 import io, json, sys, time, traceback
 
@@ -29,6 +30,8 @@ def _safe_repr(value, max_length):
         rendered = repr(value)
     except Exception:
         rendered = "<unrepresentable>"
+    if isinstance(value, (list, dict, set, bytearray)):
+        rendered = f"{rendered} <id:{id(value)}>"
     return rendered if len(rendered) <= max_length else rendered[:max_length - 1] + "…"
 
 def _run_student(code, max_steps, locals_max_length):

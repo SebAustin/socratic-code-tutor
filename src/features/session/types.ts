@@ -55,12 +55,15 @@ export interface TutorRequest {
     status: string;
   };
   traceSummary: string;
-  history: ChatTurn[];
+  history: TutorHistoryTurn[];
   requestedRung: 1 | 2 | 3 | 4;
   lang: "python" | "javascript";
 }
 
+export type TutorHistoryTurn = Omit<ChatTurn, "id"> & { id?: string };
+
 export interface ChatTurn {
+  id: string;
   role: "student" | "tutor";
   content: string;
   rung?: number;

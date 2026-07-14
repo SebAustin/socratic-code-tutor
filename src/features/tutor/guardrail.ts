@@ -27,6 +27,40 @@ function onlyQuotesStudentCode(block: string, studentCode: string): boolean {
   return blockLines.length > 0 && blockLines.every((line) => studentLines.has(line));
 }
 
+function isStudentFragment(candidate: string, studentCode: string): boolean {
+  const normalized = normalizeLine(candidate);
+  return Boolean(normalized) && studentCode
+    .split("\n")
+    .map(normalizeLine)
+    .some((line) => line.includes(normalized));
+}
+
+function inlineCodeSpans(text: string): string[] {
+  return [...text.matchAll(/(^|[^`])`([^`\n]+)`(?!`)/g)].map((match) => match[2]);
+}
+
+function isRunnableExpression(candidate: string): boolean {
+  const value = candidate.trim();
+  const assignment = /(?:^|[\s;(])(?:[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\]]+\])*)\s*(?:\*\*|\/\/|[+\-*/%])?=(?!=)/;
+  const call = /\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\s*\([^)]*\)/;
+  const subscript = /\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\s*\[[^\]]+\]/;
+  const operator = /(?:\b[A-Za-z_]\w*\b|\d+|[\])])\s*(?:\+|-|\*{1,2}|\/{1,2}|%|==|!=|<=|>=|<|>)\s*(?:\b[A-Za-z_]\w*\b|\d+|[([])/;
+  return assignment.test(value) || call.test(value) || subscript.test(value) || operator.test(value);
+}
+
+function hasBareRunnableCode(text: string): boolean {
+  const proseOnly = text
+    .replace(/```[^\n]*\n[\s\S]*?```/g, "")
+    .replace(/`[^`\n]+`/g, "");
+  return proseOnly.split("\n").some((line) => {
+    const value = line.trim();
+    if (!value) return false;
+    if (/^(?:def |class |import |from \S+ import |for |while |if |return\b)/.test(value)) return true;
+    if (/(?:^|[\s;(])(?:[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\]]+\])*)\s*(?:\*\*|\/\/|[+\-*/%])?=(?!=)/.test(value)) return true;
+    return /^(?:[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\([^)]*\)|[A-Za-z_]\w*\[[^\]]+\]|(?:[A-Za-z_]\w*|\d+)\s*(?:\+|-|\*{1,2}|\/{1,2}|%)\s*(?:[A-Za-z_]\w*|\d+))[.;]?$/.test(value);
+  });
+}
+
 function hasLongCodeEcho(text: string, studentCode: string): boolean {
   if (text.split("\n").length < GUARDRAIL_SIMILAR_LINES_N) return false;
   const studentLines = studentCode.split("\n").map(normalizeLine).filter(Boolean);
@@ -56,7 +90,7 @@ export function screen(text: string, studentCode: string, rung: HintRung): Scree
     if (!quote) return { pass: false, reason: "fenced-code rung-ceiling" };
   }
 
-  if (/\b(replace|change|rewrite|fix)\s+(?:line\s+\d+|it|this)?\s*(?:with|to|as)\b/i.test(text)) {
+  if (/\b(?:chang(?:e|ing|ed)|replac(?:e|ing|ed)|rewrit(?:e|ing|ten)|fix(?:ing|ed)?|use|using)\b[\s\S]{0,100}?\b(?:with|to|as|instead)\b|\btry\s+(?:this|that|using|changing|replacing|rewriting|fixing|[A-Za-z_])/i.test(text)) {
     return { pass: false, reason: "imperative-fix" };
   }
   if (/\b(?:here(?:'s| is)\s+(?:the|a)\s+(?:fix|solution)|copy\s+and\s+paste)\b/i.test(text)) {
@@ -66,7 +100,12 @@ export function screen(text: string, studentCode: string, rung: HintRung): Scree
     return { pass: false, reason: "similar-lines" };
   }
 
-  if (rung < 4 && /^\s*(?:def |class |import |from \S+ import |for |while |if ).*$/m.test(text)) {
+  if (rung <= 3 && inlineCodeSpans(text).some(
+    (span) => isRunnableExpression(span) && !isStudentFragment(span, studentCode),
+  )) {
+    return { pass: false, reason: "rung-ceiling inline-code" };
+  }
+  if (hasBareRunnableCode(text)) {
     return { pass: false, reason: "rung-ceiling runnable-code" };
   }
   if (rung === 4 && /pseudocode\s*:\s*\n(?:[^\n]+\n){1,}/i.test(text)) {

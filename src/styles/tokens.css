@@ -2,6 +2,8 @@
   --color-paper: oklch(97% 0.014 85);
   --color-paper-raised: oklch(99% 0.01 88);
   --color-paper-sunken: oklch(94% 0.016 82);
+  --color-paper-glow: oklch(100% 0 0 / 0.8);
+  --color-paper-rule-texture: oklch(70% 0.02 80 / 0.055);
   --color-rule: oklch(85% 0.018 75);
   --color-rule-strong: oklch(72% 0.02 70);
   --color-ink: oklch(24% 0.02 55);
@@ -13,6 +15,12 @@
   --color-terminal-ink-dim: oklch(64% 0.02 250);
   --color-terminal-rule: oklch(35% 0.03 255);
   --color-terminal-line-hi: oklch(38% 0.09 240 / 0.55);
+  --color-terminal-success: oklch(76% 0.14 150);
+  --color-terminal-success-text: oklch(76% 0.12 150);
+  --color-terminal-error: oklch(75% 0.17 25);
+  --color-terminal-error-strong: oklch(80% 0.14 25);
+  --color-terminal-error-surface: oklch(25% 0.05 25 / 0.35);
+  --color-modal-backdrop: oklch(15% 0.02 55 / 0.42);
   --color-accent: oklch(58% 0.14 240);
   --color-accent-hover: oklch(52% 0.15 240);
   --color-accent-active: oklch(47% 0.15 240);
