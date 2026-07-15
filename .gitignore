@@ -19,3 +19,10 @@ demo-video/tmp/
 demo-video/scripts/state/
 demo-video/scripts/debug/
 demo-video/assets/*.png
+
+# Submission logistics & video tooling — local-only, not part of the public project
+DEVPOST_SUBMISSION.md
+SUBMISSION_CHECKLIST.md
+SUBMISSION_PACK.md
+DEPLOY_RUNBOOK.md
+demo-video/
