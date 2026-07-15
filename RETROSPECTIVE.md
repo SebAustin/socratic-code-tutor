@@ -131,13 +131,27 @@ Recorded after the original retrospective; same blameless lens, three small less
   code; replaced with a pinned OSV-Scanner reading `pnpm-lock.yaml`, verified locally before the
   CI change. Lesson: *a green gate can rot from third-party API retirement alone — when CI fails
   on a docs-only commit, suspect the gate, not the diff.*
-- **README architecture diagram rebuilt for legibility.** The first mermaid diagram used `\n` in
-  node labels (GitHub renders those literally, not as line breaks), declared a cross-zone edge
-  inside the wrong subgraph, and gave the guardrail — the project's differentiator — no visual
-  emphasis. The revision uses `<br/>` labels, three explicit trust-zone subgraphs
-  (browser / Vercel / OpenAI), palette-matched `classDef` styling, and an accent-colored
-  `screen()` gate with the invariant stated as a caption. Lesson: *diagrams are judged artifacts;
-  render-check them on the actual host (GitHub's mermaid), not just in an editor preview.*
+- **README architecture diagram rebuilt for legibility — and mermaid ultimately replaced.**
+  The first mermaid diagram used `\n` in node labels (GitHub renders those literally), declared a
+  cross-zone edge inside the wrong subgraph, and gave the guardrail no visual emphasis. A
+  GitHub-compatible mermaid rewrite fixed rendering, but theming limits capped the quality, so the
+  final iteration replaced mermaid entirely with a **hand-crafted SVG in the react.dev
+  documentation style**: dark slate canvas (#23272F), rounded cards, cyan (#61DAFB) zone headers
+  and flow accents, color-coded trust zones, the `screen()` gate in accent orange as the visual
+  centerpiece, and label backplates so no text crosses an arrow. Verified by rendering with
+  Playwright chromium and inspecting the pixels before pushing. Lessons: *diagrams are judged
+  artifacts — render-check them on the actual host; and past a certain polish bar, a committed
+  SVG beats fighting a renderer's theming limits.*
+
+  **Owner-approved standard (record for future projects — proposal P7):** the owner explicitly
+  approved this style as the house look for architecture diagrams. Target:
+  `agency-orchestration/SKILL.md` (or the architect/doc-writer prompts), add: *"Architecture
+  diagrams in judged/public READMEs are hand-crafted SVGs in the react.dev documentation style —
+  dark #23272F canvas, rounded cards, #61DAFB accents, color-coded trust zones, the security
+  boundary as the visual centerpiece, label backplates, self-contained (system fonts, no external
+  resources) — committed under docs/images/ and pixel-verified via a headless-browser screenshot
+  before pushing. Mermaid remains acceptable for internal/working docs only."* Like P1–P6, this
+  awaits explicit application to shared skills; recorded here as an approved preference.
 - **Repo hygiene as a final pass:** submission logistics and video tooling were untracked
   (kept locally, gitignored) so the public repo reads as product + evidence only — while
   everything cited by the README or the Devpost text (playbook, fix round, plan, specs) stayed
