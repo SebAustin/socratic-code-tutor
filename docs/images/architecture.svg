@@ -1,0 +1,119 @@
+<svg viewBox="0 0 1560 920" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#99A1B3"/>
+    </marker>
+    <marker id="arrowCyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#61DAFB"/>
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#E8825D"/>
+    </marker>
+  </defs>
+
+  <!-- canvas -->
+  <rect x="0" y="0" width="1560" height="920" rx="20" fill="#23272F"/>
+
+  <!-- ZONE: student browser -->
+  <rect x="40" y="46" width="620" height="834" rx="16" fill="#2B303B" stroke="#3E4451" stroke-width="1.5"/>
+  <text x="72" y="88" fill="#61DAFB" font-size="17" font-weight="700" letter-spacing="2">STUDENT BROWSER</text>
+  <text x="72" y="112" fill="#99A1B3" font-size="15">untrusted zone — student code executes here, and only here</text>
+
+  <!-- editor -->
+  <rect x="90" y="142" width="520" height="64" rx="12" fill="#343A46" stroke="#4B5261"/>
+  <text x="350" y="181" fill="#F6F7F9" font-size="21" font-weight="600" text-anchor="middle">CodeMirror editor + Run</text>
+
+  <!-- worker -->
+  <rect x="90" y="262" width="520" height="96" rx="12" fill="#16181D" stroke="#61DAFB" stroke-width="1.5"/>
+  <text x="350" y="300" fill="#F6F7F9" font-size="21" font-weight="600" text-anchor="middle">Pyodide Web Worker</text>
+  <text x="350" y="330" fill="#99A1B3" font-size="15" text-anchor="middle">real CPython via WASM · sys.settrace · wall-time and step limits</text>
+
+  <!-- session store -->
+  <rect x="90" y="414" width="520" height="80" rx="12" fill="#343A46" stroke="#4B5261"/>
+  <text x="350" y="448" fill="#F6F7F9" font-size="21" font-weight="600" text-anchor="middle">Session store</text>
+  <text x="350" y="474" fill="#99A1B3" font-size="15" text-anchor="middle">Zustand → localStorage · no server database</text>
+
+  <!-- trace + teacher -->
+  <rect x="90" y="556" width="245" height="92" rx="12" fill="#343A46" stroke="#4B5261"/>
+  <text x="212" y="596" fill="#F6F7F9" font-size="19" font-weight="600" text-anchor="middle">Trace visualizer</text>
+  <text x="212" y="622" fill="#99A1B3" font-size="14" text-anchor="middle">step through real state</text>
+
+  <rect x="365" y="556" width="245" height="92" rx="12" fill="#343A46" stroke="#4B5261"/>
+  <text x="487" y="590" fill="#F6F7F9" font-size="19" font-weight="600" text-anchor="middle">Teacher view</text>
+  <text x="487" y="614" fill="#99A1B3" font-size="14" text-anchor="middle">misconception ledger</text>
+  <text x="487" y="634" fill="#99A1B3" font-size="14" text-anchor="middle">+ export</text>
+
+  <!-- chat -->
+  <rect x="90" y="740" width="520" height="86" rx="12" fill="#343A46" stroke="#61DAFB" stroke-width="1.5"/>
+  <text x="350" y="776" fill="#F6F7F9" font-size="21" font-weight="600" text-anchor="middle">Tutor chat + 4-rung hint ladder</text>
+  <text x="350" y="804" fill="#99A1B3" font-size="15" text-anchor="middle">only screened text ever renders here</text>
+
+  <!-- ZONE: vercel -->
+  <rect x="760" y="46" width="430" height="834" rx="16" fill="#2B303B" stroke="#3E4451" stroke-width="1.5"/>
+  <text x="792" y="88" fill="#61DAFB" font-size="17" font-weight="700" letter-spacing="2">VERCEL</text>
+  <text x="792" y="112" fill="#99A1B3" font-size="15">trusted zone — the only place the API key exists</text>
+
+  <!-- route -->
+  <rect x="800" y="142" width="350" height="110" rx="12" fill="#16181D" stroke="#4B5261"/>
+  <text x="975" y="180" fill="#F6F7F9" font-size="21" font-weight="600" text-anchor="middle">/api/tutor · /api/tag</text>
+  <text x="975" y="208" fill="#99A1B3" font-size="15" text-anchor="middle">zod validation · per-IP rate limit</text>
+  <text x="975" y="230" fill="#99A1B3" font-size="15" text-anchor="middle">turn and output-token caps</text>
+
+  <!-- buffer -->
+  <rect x="800" y="400" width="350" height="64" rx="12" fill="#343A46" stroke="#4B5261"/>
+  <text x="975" y="439" fill="#F6F7F9" font-size="20" font-weight="600" text-anchor="middle">Server-side token buffer</text>
+
+  <!-- screen gate -->
+  <rect x="800" y="540" width="350" height="130" rx="12" fill="#B65C38" stroke="#E8825D" stroke-width="2"/>
+  <text x="975" y="582" fill="#FFF6EF" font-size="22" font-weight="700" text-anchor="middle">screen() gate</text>
+  <text x="975" y="612" fill="#FFE7DA" font-size="15" text-anchor="middle">deterministic no-solution check at every</text>
+  <text x="975" y="634" fill="#FFE7DA" font-size="15" text-anchor="middle">sentence / code-fence boundary</text>
+
+  <!-- ZONE: openai -->
+  <rect x="1280" y="360" width="240" height="204" rx="16" fill="#2B303B" stroke="#10A37F" stroke-width="1.5"/>
+  <text x="1312" y="402" fill="#10A37F" font-size="17" font-weight="700" letter-spacing="2">OPENAI API</text>
+  <rect x="1304" y="424" width="192" height="110" rx="12" fill="#10A37F"/>
+  <text x="1400" y="468" fill="#FFFFFF" font-size="22" font-weight="700" text-anchor="middle">GPT-5.6</text>
+  <text x="1400" y="498" fill="#D9F4EC" font-size="14" text-anchor="middle">OpenAI SDK · streaming</text>
+
+  <!-- FLOWS inside browser -->
+  <line x1="350" y1="206" x2="350" y2="256" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="366" y="238" fill="#99A1B3" font-size="14">code</text>
+  <line x1="350" y1="358" x2="350" y2="408" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="366" y="388" fill="#99A1B3" font-size="14">stdout · traceback · trace events</text>
+  <line x1="212" y1="494" x2="212" y2="550" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="487" y1="494" x2="487" y2="550" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- session -> route -->
+  <path d="M 610 454 C 700 454, 700 197, 794 197" fill="none" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="628" y="298" width="148" height="90" rx="8" fill="#23272F" opacity="0.92"/>
+  <text x="702" y="318" fill="#99A1B3" font-size="14" text-anchor="middle">code + run result</text>
+  <text x="702" y="338" fill="#99A1B3" font-size="14" text-anchor="middle">+ trace summary</text>
+  <text x="702" y="358" fill="#99A1B3" font-size="14" text-anchor="middle">(delimiter-wrapped,</text>
+  <text x="702" y="378" fill="#99A1B3" font-size="14" text-anchor="middle">treated as untrusted)</text>
+
+  <!-- route -> gpt -->
+  <path d="M 1150 197 C 1330 197, 1400 260, 1400 418" fill="none" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1330" y="230" fill="#99A1B3" font-size="14">assembled prompt</text>
+
+  <!-- gpt -> buffer -->
+  <path d="M 1304 500 C 1220 510, 1220 432, 1156 432" fill="none" stroke="#10A37F" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1218" y="480" fill="#10A37F" font-size="14" text-anchor="middle">token stream</text>
+
+  <!-- buffer -> screen -->
+  <line x1="975" y1="464" x2="975" y2="534" stroke="#99A1B3" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- screen -> chat: pass -->
+  <path d="M 800 605 C 700 605, 680 730, 616 762" fill="none" stroke="#61DAFB" stroke-width="2.5" marker-end="url(#arrowCyan)"/>
+  <rect x="608" y="658" width="158" height="48" rx="8" fill="#23272F" opacity="0.92"/>
+  <text x="687" y="678" fill="#61DAFB" font-size="15" font-weight="600" text-anchor="middle">pass →</text>
+  <text x="687" y="698" fill="#61DAFB" font-size="15" font-weight="600" text-anchor="middle">screened SSE chunk</text>
+
+  <!-- screen -> chat: flag -->
+  <path d="M 830 670 C 790 748, 720 800, 616 800" fill="none" stroke="#E8825D" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#arrowOrange)"/>
+  <text x="762" y="782" fill="#E8825D" font-size="14" text-anchor="middle">flag → abort stream,</text>
+  <text x="762" y="801" fill="#E8825D" font-size="14" text-anchor="middle">safe fallback question</text>
+
+  <!-- invariant footnote -->
+  <text x="780" y="896" fill="#7A828F" font-size="14" text-anchor="middle" font-style="italic">Invariant: no unscreened model text ever reaches the client — the orange gate is the only path from GPT-5.6 to the student.</text>
+</svg>

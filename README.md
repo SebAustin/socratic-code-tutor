@@ -47,52 +47,7 @@ Most coding assistants optimize for completion. This app is designed around prod
 
 ## How it works
 
-```mermaid
-flowchart TB
-    subgraph CLIENT["STUDENT BROWSER — untrusted zone"]
-        direction TB
-        EDITOR["CodeMirror editor + Run"]
-        WORKER["Pyodide Web Worker<br/>real CPython via WASM + sys.settrace<br/>wall-time and step limits"]
-        SESSION["Session store<br/>Zustand + localStorage"]
-        TRACE["Trace visualizer"]
-        TEACHER["Teacher view<br/>misconception ledger + export"]
-        CHAT["Tutor chat + 4-rung hint ladder"]
-        EDITOR -->|code| WORKER
-        WORKER -->|stdout, traceback, trace events| SESSION
-        SESSION --> TRACE
-        SESSION --> TEACHER
-    end
-
-    subgraph SERVER["VERCEL — trusted zone, holds the API key"]
-        direction TB
-        ROUTE["/api/tutor and /api/tag<br/>zod validation, per-IP rate limit,<br/>turn and output-token caps"]
-        BUFFER["Server-side token buffer"]
-        SCREEN["screen() gate - deterministic no-solution check<br/>at every sentence / code-fence boundary"]
-    end
-
-    subgraph OPENAI["OPENAI API"]
-        GPT["GPT-5.6<br/>OpenAI SDK, streaming"]
-    end
-
-    SESSION -->|code + run result + trace summary, delimiter-wrapped| ROUTE
-    ROUTE -->|assembled prompt| GPT
-    GPT -->|token stream| BUFFER
-    BUFFER --> SCREEN
-    SCREEN -->|pass: screened SSE chunk| CHAT
-    SCREEN -.->|flag: abort stream, emit safe fallback question| CHAT
-
-    classDef paper fill:#F7F3EA,stroke:#B8AE9C,color:#2B2622
-    classDef terminal fill:#252A38,stroke:#4A5164,color:#EDEFF5
-    classDef guard fill:#B65C38,stroke:#8F4526,color:#FFF6EF
-    classDef model fill:#10A37F,stroke:#0B7A5F,color:#FFFFFF
-    class EDITOR,SESSION,TRACE,TEACHER,CHAT paper
-    class WORKER,ROUTE,BUFFER terminal
-    class SCREEN guard
-    class GPT model
-    style CLIENT fill:#FDFBF6,stroke:#B8AE9C,color:#6B6355
-    style SERVER fill:#EEF0F5,stroke:#4A5164,color:#3A4051
-    style OPENAI fill:#E9F7F2,stroke:#10A37F,color:#0B7A5F
-```
+![Architecture: three trust zones — the student browser runs Pyodide and never sends code for server execution; Vercel route handlers hold the API key and screen every GPT-5.6 chunk through the screen() gate before it reaches the tutor chat](docs/images/architecture.svg)
 
 **Invariant:** no unscreened model text ever reaches the client — the orange `screen()` gate is
 the only path from GPT-5.6 to the student, and a flag halts the stream mid-turn.
