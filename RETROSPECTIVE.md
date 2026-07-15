@@ -119,3 +119,26 @@ substitute for the commit-after-every-turn rule (P1)."*
 None of P1–P6 is applied. They await the owner's explicit, per-item approval; approved items land
 on a feature branch and in `SKILL-UPDATES.md` only — never auto-merged to shared skills. Nothing
 here weakens a guardrail or lowers a quality bar.
+
+## 7. Addendum — post-acceptance polish round (Jul 15)
+
+Recorded after the original retrospective; same blameless lens, three small lessons.
+
+- **CI broke twice after acceptance, both from outside the app's code.** (1) Committing the
+  demo-video tooling put plain-Node CJS scripts inside the app's `eslint .` surface — fixed by
+  scoping lint ignores to the app (`demo-video/**`, local editor dirs). (2) npm retired its legacy
+  audit endpoint (HTTP 410), silently breaking `pnpm audit` in CI for every push regardless of
+  code; replaced with a pinned OSV-Scanner reading `pnpm-lock.yaml`, verified locally before the
+  CI change. Lesson: *a green gate can rot from third-party API retirement alone — when CI fails
+  on a docs-only commit, suspect the gate, not the diff.*
+- **README architecture diagram rebuilt for legibility.** The first mermaid diagram used `\n` in
+  node labels (GitHub renders those literally, not as line breaks), declared a cross-zone edge
+  inside the wrong subgraph, and gave the guardrail — the project's differentiator — no visual
+  emphasis. The revision uses `<br/>` labels, three explicit trust-zone subgraphs
+  (browser / Vercel / OpenAI), palette-matched `classDef` styling, and an accent-colored
+  `screen()` gate with the invariant stated as a caption. Lesson: *diagrams are judged artifacts;
+  render-check them on the actual host (GitHub's mermaid), not just in an editor preview.*
+- **Repo hygiene as a final pass:** submission logistics and video tooling were untracked
+  (kept locally, gitignored) so the public repo reads as product + evidence only — while
+  everything cited by the README or the Devpost text (playbook, fix round, plan, specs) stayed
+  public as proof of the build story.

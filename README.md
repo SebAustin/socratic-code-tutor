@@ -48,25 +48,48 @@ Most coding assistants optimize for completion. This app is designed around prod
 ## How it works
 
 ```mermaid
-flowchart LR
-    subgraph Browser["Student browser (untrusted zone)"]
-        Editor["Editor + Run panel"] -->|RunRequest| Worker["Pyodide Web Worker\nsys.settrace"]
-        Worker -->|RunResult + trace| Store["Zustand session store\n→ localStorage"]
-        Store -->|TutorRequest| Route
+flowchart TB
+    classDef paper fill:#F7F3EA,stroke:#B8AE9C,color:#2B2622
+    classDef terminal fill:#252A38,stroke:#4A5164,color:#EDEFF5
+    classDef guard fill:#B65C38,stroke:#8F4526,color:#FFF6EF
+    classDef model fill:#10A37F,stroke:#0B7A5F,color:#FFFFFF
+
+    subgraph CLIENT["STUDENT BROWSER — untrusted zone: student code executes here and only here"]
+        direction TB
+        EDITOR["CodeMirror editor + Run"]:::paper
+        WORKER["Pyodide Web Worker<br/>real CPython via WASM + sys.settrace<br/>wall-time and step limits"]:::terminal
+        SESSION["Session store<br/>Zustand → localStorage"]:::paper
+        TRACE["Trace visualizer"]:::paper
+        TEACHER["Teacher view<br/>misconception ledger + export"]:::paper
+        CHAT["Tutor chat + 4-rung hint ladder"]:::paper
+
+        EDITOR -- "code" --> WORKER
+        WORKER -- "stdout · traceback · trace events" --> SESSION
+        SESSION --> TRACE
+        SESSION --> TEACHER
     end
 
-    subgraph Server["Vercel route handlers (trusted zone)"]
-        Route["/api/tutor"] --> Buffer["Server buffer"]
-        Buffer --> Screen["deterministic screen()"]
-        Screen -->|pass| SSE["Screened SSE stream"]
-        Screen -.->|flag| Fallback["Safe fallback question"]
-        Route -->|prompt + quoted code/trace| GPT["GPT-5.6"]
-        GPT --> Buffer
+    subgraph SERVER["VERCEL ROUTE HANDLERS — trusted zone: the only place the API key exists"]
+        direction TB
+        ROUTE["/api/tutor · /api/tag<br/>zod validation · per-IP rate limit<br/>turn and output-token caps"]:::terminal
+        BUFFER["Server-side token buffer"]:::terminal
+        SCREEN{{"screen()<br/>deterministic no-solution check<br/>at every sentence / code-fence boundary"}}:::guard
     end
 
-    SSE --> Chat["Chat UI"]
-    Store --> Teacher["Teacher view\n(reads local sessions)"]
+    subgraph OPENAI["OPENAI API"]
+        GPT["GPT-5.6<br/>OpenAI SDK · streaming"]:::model
+    end
+
+    SESSION -- "code + run result + trace summary<br/>(delimiter-wrapped, treated as untrusted)" --> ROUTE
+    ROUTE -- "assembled prompt" --> GPT
+    GPT -- "token stream" --> BUFFER
+    BUFFER --> SCREEN
+    SCREEN -- "pass → screened SSE chunk" --> CHAT
+    SCREEN -. "flag → abort upstream stream,<br/>emit safe fallback question" .-> CHAT
 ```
+
+**Invariant:** no unscreened model text ever reaches the client — the orange `screen()` gate is
+the only path from GPT-5.6 to the student, and a flag halts the stream mid-turn.
 
 Student code and its trace cross the network only as quoted, delimiter-wrapped LLM context —
 never as something the server executes. Model tokens are buffered server-side and only
