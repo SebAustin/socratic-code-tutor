@@ -49,43 +49,46 @@ Most coding assistants optimize for completion. This app is designed around prod
 
 ```mermaid
 flowchart TB
-    classDef paper fill:#F7F3EA,stroke:#B8AE9C,color:#2B2622
-    classDef terminal fill:#252A38,stroke:#4A5164,color:#EDEFF5
-    classDef guard fill:#B65C38,stroke:#8F4526,color:#FFF6EF
-    classDef model fill:#10A37F,stroke:#0B7A5F,color:#FFFFFF
-
-    subgraph CLIENT["STUDENT BROWSER — untrusted zone: student code executes here and only here"]
+    subgraph CLIENT["STUDENT BROWSER - untrusted zone: student code executes here and only here"]
         direction TB
-        EDITOR["CodeMirror editor + Run"]:::paper
-        WORKER["Pyodide Web Worker<br/>real CPython via WASM + sys.settrace<br/>wall-time and step limits"]:::terminal
-        SESSION["Session store<br/>Zustand → localStorage"]:::paper
-        TRACE["Trace visualizer"]:::paper
-        TEACHER["Teacher view<br/>misconception ledger + export"]:::paper
-        CHAT["Tutor chat + 4-rung hint ladder"]:::paper
-
-        EDITOR -- "code" --> WORKER
-        WORKER -- "stdout · traceback · trace events" --> SESSION
+        EDITOR["CodeMirror editor + Run"]
+        WORKER["Pyodide Web Worker<br/>real CPython via WASM + sys.settrace<br/>wall-time and step limits"]
+        SESSION["Session store<br/>Zustand + localStorage"]
+        TRACE["Trace visualizer"]
+        TEACHER["Teacher view<br/>misconception ledger + export"]
+        CHAT["Tutor chat + 4-rung hint ladder"]
+        EDITOR -->|code| WORKER
+        WORKER -->|stdout, traceback, trace events| SESSION
         SESSION --> TRACE
         SESSION --> TEACHER
     end
 
-    subgraph SERVER["VERCEL ROUTE HANDLERS — trusted zone: the only place the API key exists"]
+    subgraph SERVER["VERCEL ROUTE HANDLERS - trusted zone: the only place the API key exists"]
         direction TB
-        ROUTE["/api/tutor · /api/tag<br/>zod validation · per-IP rate limit<br/>turn and output-token caps"]:::terminal
-        BUFFER["Server-side token buffer"]:::terminal
-        SCREEN{{"screen()<br/>deterministic no-solution check<br/>at every sentence / code-fence boundary"}}:::guard
+        ROUTE["/api/tutor and /api/tag<br/>zod validation, per-IP rate limit,<br/>turn and output-token caps"]
+        BUFFER["Server-side token buffer"]
+        SCREEN["screen() gate - deterministic no-solution check<br/>at every sentence / code-fence boundary"]
     end
 
     subgraph OPENAI["OPENAI API"]
-        GPT["GPT-5.6<br/>OpenAI SDK · streaming"]:::model
+        GPT["GPT-5.6<br/>OpenAI SDK, streaming"]
     end
 
-    SESSION -- "code + run result + trace summary<br/>(delimiter-wrapped, treated as untrusted)" --> ROUTE
-    ROUTE -- "assembled prompt" --> GPT
-    GPT -- "token stream" --> BUFFER
+    SESSION -->|code + run result + trace summary, delimiter-wrapped| ROUTE
+    ROUTE -->|assembled prompt| GPT
+    GPT -->|token stream| BUFFER
     BUFFER --> SCREEN
-    SCREEN -- "pass → screened SSE chunk" --> CHAT
-    SCREEN -. "flag → abort upstream stream,<br/>emit safe fallback question" .-> CHAT
+    SCREEN -->|pass: screened SSE chunk| CHAT
+    SCREEN -.->|flag: abort stream, emit safe fallback question| CHAT
+
+    classDef paper fill:#F7F3EA,stroke:#B8AE9C,color:#2B2622
+    classDef terminal fill:#252A38,stroke:#4A5164,color:#EDEFF5
+    classDef guard fill:#B65C38,stroke:#8F4526,color:#FFF6EF
+    classDef model fill:#10A37F,stroke:#0B7A5F,color:#FFFFFF
+    class EDITOR,SESSION,TRACE,TEACHER,CHAT paper
+    class WORKER,ROUTE,BUFFER terminal
+    class SCREEN guard
+    class GPT model
 ```
 
 **Invariant:** no unscreened model text ever reaches the client — the orange `screen()` gate is
