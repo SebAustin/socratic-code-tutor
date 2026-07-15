@@ -13,7 +13,13 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
-      - run: pnpm audit --audit-level=high
+      # npm retired the legacy audit endpoint pnpm relies on (HTTP 410); scan the
+      # lockfile against OSV.dev instead.
+      - name: Dependency vulnerability scan (OSV)
+        run: |
+          curl -sSL -o /tmp/osv-scanner https://github.com/google/osv-scanner/releases/download/v2.4.0/osv-scanner_linux_amd64
+          chmod +x /tmp/osv-scanner
+          /tmp/osv-scanner --lockfile=pnpm-lock.yaml
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e --project=chromium
