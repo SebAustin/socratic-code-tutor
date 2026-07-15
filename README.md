@@ -49,7 +49,7 @@ Most coding assistants optimize for completion. This app is designed around prod
 
 ```mermaid
 flowchart TB
-    subgraph CLIENT["STUDENT BROWSER - untrusted zone: student code executes here and only here"]
+    subgraph CLIENT["STUDENT BROWSER — untrusted zone"]
         direction TB
         EDITOR["CodeMirror editor + Run"]
         WORKER["Pyodide Web Worker<br/>real CPython via WASM + sys.settrace<br/>wall-time and step limits"]
@@ -63,7 +63,7 @@ flowchart TB
         SESSION --> TEACHER
     end
 
-    subgraph SERVER["VERCEL ROUTE HANDLERS - trusted zone: the only place the API key exists"]
+    subgraph SERVER["VERCEL — trusted zone, holds the API key"]
         direction TB
         ROUTE["/api/tutor and /api/tag<br/>zod validation, per-IP rate limit,<br/>turn and output-token caps"]
         BUFFER["Server-side token buffer"]
@@ -89,6 +89,9 @@ flowchart TB
     class WORKER,ROUTE,BUFFER terminal
     class SCREEN guard
     class GPT model
+    style CLIENT fill:#FDFBF6,stroke:#B8AE9C,color:#6B6355
+    style SERVER fill:#EEF0F5,stroke:#4A5164,color:#3A4051
+    style OPENAI fill:#E9F7F2,stroke:#10A37F,color:#0B7A5F
 ```
 
 **Invariant:** no unscreened model text ever reaches the client — the orange `screen()` gate is
